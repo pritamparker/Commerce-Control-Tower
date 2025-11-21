@@ -22,6 +22,7 @@ type Cart struct {
 }
 
 // Order holds the data for a finalized purchase.
+//todo: add validation for the order
 type Order struct {
 	ID            string     `json:"id"`
 	UserID        string     `json:"userId"`
@@ -33,6 +34,7 @@ type Order struct {
 }
 
 // DiscountCode represents a promotional code available to customers.
+//todo: add validation for the discount code
 type DiscountCode struct {
 	Code             string    `json:"code"`
 	Percentage       float64   `json:"percentage"`
@@ -43,6 +45,7 @@ type DiscountCode struct {
 }
 
 // Stats aggregates store metrics for the admin dashboard.
+//todo: add validation for the stats
 type Stats struct {
 	TotalOrders        int            `json:"totalOrders"`
 	TotalItemsSold     int            `json:"totalItemsSold"`
@@ -53,6 +56,7 @@ type Stats struct {
 }
 
 // MemoryStore is an in-memory implementation for the exercise.
+//todo: add validation for the item
 type MemoryStore struct {
 	mu                sync.Mutex
 	carts             map[string]*Cart
@@ -87,6 +91,7 @@ func NewMemoryStore(nthOrder int) *MemoryStore {
 }
 
 // AddItem appends or updates an item inside the user's cart.
+// todo: add validation for the item
 func (s *MemoryStore) AddItem(userID string, item CartItem) Cart {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -132,8 +137,8 @@ func (s *MemoryStore) Checkout(userID, discountCode string) (Order, error) {
 
 	for _, item := range cart.Items {
 		items = append(items, item)
-		gross += float64(item.Quantity) * item.Price
-		s.totalItemsSold += item.Quantity
+		gross += float64(item.Quantity) * item.Price // total amount before discount
+		s.totalItemsSold += item.Quantity // total items sold
 	}
 
 	if discountCode != "" {
@@ -153,14 +158,14 @@ func (s *MemoryStore) Checkout(userID, discountCode string) (Order, error) {
 		s.discountHistory = append(s.discountHistory, *s.activeDiscount)
 		s.activeDiscount = nil
 		s.nextEligibleOrder += s.nthOrderThreshold
-		s.totalDiscount += discountApplied
+		s.totalDiscount += discountApplied // total discount given
 	}
 
 	order := Order{
 		ID:            s.generateOrderID(),
 		UserID:        userID,
 		Items:         items,
-		TotalAmount:   gross - discountApplied,
+		TotalAmount:   gross - discountApplied, // total amount after discount
 		DiscountCode:  codeUsed,
 		DiscountValue: discountApplied,
 		CreatedAt:     time.Now(),
